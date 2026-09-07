@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #define NUM_THREADS 5
 
@@ -11,7 +12,7 @@ void *thread_func(void *arg)
 	// TODO: cast arg back to an int (or int*, your choice — think about which
 	// is safer and why) and print "thread %d started\n" then "thread %d finished\n"
 	int x;
-	x = (int)arg;
+	x = *(int *)arg;
 	printf("thread %d started\n", x);
 	printf("thread %d finished\n", x);
 	return (NULL);
@@ -19,8 +20,9 @@ void *thread_func(void *arg)
 
 int main(void)
 {
+	int i;
 	pthread_t threads[NUM_THREADS];
-
+	int *ids = malloc(sizeof(int) * NUM_THREADS);
 	// TODO: spawn NUM_THREADS threads with pthread_create, passing each
 	// thread its index.
 	//
@@ -31,9 +33,14 @@ int main(void)
 	// Once you've SEEN the bug, fix it (hint: each thread needs its own
 	// piece of memory holding its index — the loop variable `i` is shared
 	// and changes while threads are still starting).
-	
-
+	for(i = 0; i < 5; i++)
+	{
+		ids[i] = i;
+		pthread_create(&threads[i],NULL,&thread_func, &ids[i]);
+	}
+	for(int i = 0; i < 5; i++)
+		pthread_join(threads[i], NULL);
 	// TODO: join all threads before returning.
-
+	free(ids);
 	return (0);
 }
