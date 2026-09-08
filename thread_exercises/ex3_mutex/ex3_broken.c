@@ -14,8 +14,10 @@ void *increment_func(void *arg)
 	// unlock counter_lock. Every single increment gets its own lock/unlock
 	// pair (yes, this is slow — that's expected, correctness first).
 	for (int i = 0; i < INCREMENTS; i++)
-	{
+	{	
 		pthread_mutex_lock(&counter_lock);
+		if (i == 500)
+			return NULL;
 		counter++;
 		pthread_mutex_unlock(&counter_lock);
 	}
