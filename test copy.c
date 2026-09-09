@@ -9,11 +9,12 @@ int numb[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 void *work(void *arg)
 {
 	int index = *(int*)arg;
-	int sum = 0; 
-	while(index < 5)
+	int sum = 0;
+	int i = 0; 
+	while(i < 5)
 	{
-		sum += numb[index];
-		index++;
+		sum += numb[i + index];
+		i++;
 	}
 	printf("the local sum = %d\n", sum);
 	*(int*) arg = sum;
@@ -27,7 +28,7 @@ int main()
 	for(i = 0; i < THREAD_NUMBER; i++)
 	{
 		int *x = malloc(sizeof(int));
-		*x = i;
+		*x = i * 5;
 		pthread_create(&thread[i], NULL, &work, x);
 	}
 	int big_some = 0;
