@@ -17,7 +17,9 @@ void *increment_func(void *arg)
 	{	
 		pthread_mutex_lock(&counter_lock);
 		if (i == 500)
-			return NULL;
+		{
+			pthread_mutex_unlock(&counter_lock);
+			return NULL;}
 		counter++;
 		pthread_mutex_unlock(&counter_lock);
 	}
