@@ -1,80 +1,88 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parse.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/09/12 23:26:42 by aelmeski          #+#    #+#             */
+/*   Updated: 2026/09/12 23:49:01 by aelmeski         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "codexion.h"
 
-int is_digit(char c)
+void	print_error(char *msg)
 {
-    if (c >= 48 && c <= 57)
-        return 1;
-    return 0;
+	write(2, msg, ft_strlen(msg));
 }
 
-int ft_strlen(char *str)
+int	get_scheduler(char *str)
 {
-    int i = 0;
-
-    while (str[i])
-        i++;
-    return i;
+	if (ft_strcmp(str, "fifo") == 0)
+		return (FIFO);
+	if (ft_strcmp(str, "edf") == 0)
+		return (EDF);
+	return (-1);
 }
 
-int ft_strcmp(char *s1, char *s2)
+int	parse_numeric_args(char **argv, int *values)
 {
-    int i = 0;
+	int	i;
+	int	verified;
 
-    while (s1[i] && s2[i] && s1[i] == s2[i])
-        i++;
-    return ((unsigned char)s1[i] - (unsigned char)s2[i]);
+	i = 1;
+	while (i <= 7)
+	{
+		if (!is_number(argv[i]))
+		{
+			print_error("[ERROR] invalid numeric argument!\n");
+			exit(1);
+		}
+		values[i - 1] = ft_atoi(argv[i]);
+		if (i - 1 == 0)
+			verified = (values[i - 1] > 0);
+		else
+			verified = (values[i - 1] >= 0);
+		if (verified)
+		{
+			print_error("[ERROR] invalid argument value!\n");
+			exit(1);
+		}
+		i++;
+	}
+	return (0);
 }
 
-int ft_atoi(char *str)
+void	fill_sim(t_sim *sim, int *values, int sched)
 {
-    int  i;
-    int  sign;
-    long result;
-
-    i = 0;
-    sign = 1;
-    result = 0;
-    if (str[i] == '-' || str[i] == '+')
-    {
-        if (str[i] == '-')
-            sign = -1;
-        i++;
-    }
-    while (str[i])
-    {
-        result = result * 10 + (str[i] - '0');
-        i++;
-    }
-    return ((int)(result * sign));
+	sim->num_coders = values[0];
+	sim->time_to_burnout = values[1];
+	sim->time_to_compile = values[2];
+	sim->time_to_debug = values[3];
+	sim->time_to_refactor = values[4];
+	sim->compiles_required = values[5];
+	sim->dongle_cooldown = values[6];
+	sim->scheduler = sched;
 }
 
-int is_number(char *str)
+int	parse_args(int argc, char **argv, t_sim *sim)
 {
-    int i = 0;
+	int	values[7];
+	int	sched;
 
-    if (str[i] == '-' || str[i] == '+')
-        i++;
-    if (!is_digit(str[i]))
-        return 0;
-    while (str[i])
-    {
-        if (!is_digit(str[i]))
-            return 0;
-        i++;
-    }
-    return 1;
-}
-
-int valid_scheduler(char *str)
-{
-    if (ft_strcmp(str, "fifo") == 0)
-        return 1;
-    if (ft_strcmp(str, "edf") == 0)
-        return 1;
-    return 0;
-}
-
-void print_error(char *msg)
-{
-    write(2, msg, ft_strlen(msg));
+	if (argc != 9)
+	{
+		print_error("[ERROR] wrong number of arguments!\n");
+		exit(1);
+	}
+	parse_numeric_args(argv, values);
+	sched = get_scheduler(argv[8]);
+	if (sched == -1)
+	{
+		print_error("[ERROR] scheduler must be fifo or edf!\n");
+		exit(1);
+	}
+	fill_sim(sim, values, sched);
+	return (0);
 }
