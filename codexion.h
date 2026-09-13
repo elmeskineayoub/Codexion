@@ -6,7 +6,7 @@
 /*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/12 23:28:50 by aelmeski          #+#    #+#             */
-/*   Updated: 2026/09/12 23:29:13 by aelmeski         ###   ########.fr       */
+/*   Updated: 2026/09/13 09:42:57 by aelmeski         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,7 +94,7 @@ int		is_number(char *str);
 void	print_error(char *msg);
 int		valid_scheduler(char *str);
 int		parse_numeric_args(char **argv, int *values);
-void	fill_sim(t_sim *sim, int *values, char *sched);
+void	fill_sim(t_sim *sim, int *values, int sched);
 int		parse_args(int argc, char **argv, t_sim *sim);
 
 /* init.c */
