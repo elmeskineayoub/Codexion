@@ -6,7 +6,7 @@
 #    By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/09/12 23:37:41 by aelmeski          #+#    #+#              #
-#    Updated: 2026/09/12 23:37:53 by aelmeski         ###   ########.fr        #
+#    Updated: 2026/09/14 22:15:07 by aelmeski         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -18,7 +18,7 @@ CFLAGS = -Wall -Wextra -Werror -pthread
 
 NAME = codexion
 
-SRCS = coder.c dongle.c heap.c init.c main.c monitor.c parse.c utils.c
+SRCS = coder.c dongle.c dongle_utils.c heap.c heap_utils.c init.c main.c monitor.c parse.c parse_utils.c utils.c
 
 OBJS = $(SRCS:.c=.o)
 

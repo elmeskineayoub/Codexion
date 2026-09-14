@@ -6,7 +6,7 @@
 /*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/12 23:28:50 by aelmeski          #+#    #+#             */
-/*   Updated: 2026/09/13 09:42:57 by aelmeski         ###   ########.fr       */
+/*   Updated: 2026/09/14 22:08:48 by aelmeski         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,9 +120,15 @@ int		cmp_request(t_request *a, t_request *b, int scheduler);
 
 /* dongle.c */
 int		is_available(t_dongle *dongle);
-void	request_dongles(t_coder *coder, t_sim *sim);
+int		acquire_one(t_dongle *dongle, t_coder *coder, t_sim *sim);
+int		request_dongles(t_coder *coder, t_sim *sim);
+void	release_one(t_dongle *dongle, t_sim *sim);
 void	release_dongles(t_coder *coder, t_sim *sim);
-void	grant_next(t_dongle *dongle);
+
+/* dongle_utils.c */
+t_request	build_request(t_coder *coder, t_sim *sim);
+void		wait_for_dongle(t_dongle *dongle, long deadline);
+
 
 /* coder.c */
 void	*coder_routine(void *arg);

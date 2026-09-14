@@ -6,24 +6,11 @@
 /*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 11:40:22 by aelmeski          #+#    #+#             */
-/*   Updated: 2026/09/13 18:38:09 by aelmeski         ###   ########.fr       */
+/*   Updated: 2026/09/14 21:42:03 by aelmeski         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
-
-int	heap_push(t_heap *heap, t_request req)
-{
-	int	i;
-
-	if (heap->size == heap->capacity)
-		return (1);
-	heap->data[heap->size] = req;
-	i = heap->size;
-	heap->size++;
-	sift_up(heap, i);
-	return (0);
-}
 
 void	sift_up(t_heap *heap, int i)
 {
@@ -40,6 +27,19 @@ void	sift_up(t_heap *heap, int i)
 		else
 			break ;
 	}
+}
+
+int	heap_push(t_heap *heap, t_request req)
+{
+	int	i;
+
+	if (heap->size == heap->capacity)
+		return (1);
+	heap->data[heap->size] = req;
+	i = heap->size;
+	heap->size++;
+	sift_up(heap, i);
+	return (0);
 }
 
 void	sift_down(t_heap *heap, int i)
