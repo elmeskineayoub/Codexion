@@ -6,7 +6,7 @@
 /*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/12 23:28:50 by aelmeski          #+#    #+#             */
-/*   Updated: 2026/09/15 07:37:30 by aelmeski         ###   ########.fr       */
+/*   Updated: 2026/09/15 16:36:12 by aelmeski         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 # include <errno.h>
 # include <limits.h>
 # include <pthread.h>
+#include <string.h>
 # include <stdio.h>
 # include <stdlib.h>
 # include <sys/time.h>
@@ -104,19 +105,23 @@ int					init_coders(t_sim *sim);
 int					join_all(t_sim *sim);
 void				cleanup_all(t_sim *sim);
 
+
 /* utils.c */
 long				now_ms(void);
-void				precise_sleep(t_sim *sim, long ms);
-void				ms_to_abstime(struct timespec *ts, long ms);
+void				precise_sleep(t_sim *sim, int ms);
+void				ms_to_abstime(struct timespec *ts, int ms);
 void				log_state(t_sim *sim, int coder_id, char *state);
 int					sim_stopped(t_sim *sim);
 
 /* heap.c */
 t_heap				*heap_create(int capacity, int scheduler);
-void				heap_push(t_heap *heap, t_request req);
+int				heap_push(t_heap *heap, t_request req);
 int					heap_pop(t_heap *heap, t_request *out);
 int					heap_peek(t_heap *heap, t_request *out);
-int					cmp_request(t_request *a, t_request *b, int scheduler);
+int					cmp_request(t_request *a, t_request *b, t_scheduler scheduler);
+void			swap(t_request *a, t_request *b);
+void			heap_destroy(t_heap *heap);
+
 
 /* dongle.c */
 int					is_available(t_dongle *dongle);
@@ -131,16 +136,19 @@ void				wait_for_dongle(t_dongle *dongle, long deadline);
 int					wait_single_dongle(t_sim *sim);
 
 /* coder.c */
-void				*coder_routine(void *arg);
 void				do_compile(t_coder *coder, t_sim *sim);
 void				do_phase(t_coder *coder, t_sim *sim, long duration,
 						char *state);
-void				record_compile(t_coder *coder, t_sim *sim);
+void				record_compile(t_coder *coder, long start);
+void				*coder_routine(void *arg);
 
 /* monitor.c */
 void				*monitor_routine(void *arg);
 int					check_burnout(t_sim *sim);
 int					check_all_done(t_sim *sim);
 void				stop_sim(t_sim *sim);
+
+int 			launch_threads(t_sim *sim);
+
 
 #endif

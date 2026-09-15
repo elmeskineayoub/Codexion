@@ -6,7 +6,7 @@
 /*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 00:03:02 by aelmeski          #+#    #+#             */
-/*   Updated: 2026/09/15 07:36:14 by aelmeski         ###   ########.fr       */
+/*   Updated: 2026/09/15 16:30:39 by aelmeski         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,4 +77,48 @@ int	init_coders(t_sim *sim)
 		i++;
 	}
 	return (0);
+}
+
+int	join_all(t_sim *sim)
+{
+	int	i;
+
+	i = 0;
+	while (i < sim->num_coders)
+	{
+		pthread_join(sim->coder_threads[i], NULL);
+		i++;
+	}
+	pthread_join(sim->monitor_thread, NULL);
+	return (0);
+}
+
+void	cleanup_all(t_sim *sim)
+{
+	int	i;
+
+	if (sim->dongles)
+	{
+		i = 0;
+		while (i < sim->num_coders)
+		{
+			heap_destroy(sim->dongles[i].waiters);
+			pthread_cond_destroy(&sim->dongles[i].cond);
+			pthread_mutex_destroy(&sim->dongles[i].mutex);
+			i++;
+		}
+		free(sim->dongles);
+	}
+	if (sim->coders)
+	{
+		i = 0;
+		while (i < sim->num_coders)
+		{
+			pthread_mutex_destroy(&sim->coders[i].state_mutex);
+			i++;
+		}
+		free(sim->coders);
+	}
+	pthread_mutex_destroy(&sim->stop_mutex);
+	pthread_mutex_destroy(&sim->log_mutex);
 }
