@@ -6,7 +6,7 @@
 /*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 00:03:02 by aelmeski          #+#    #+#             */
-/*   Updated: 2026/09/13 00:35:49 by aelmeski         ###   ########.fr       */
+/*   Updated: 2026/09/15 07:36:14 by aelmeski         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ int	init_dongles(t_sim *sim)
 	int	i;
 
 	n = sim->num_coders;
-    sim->dongles = malloc(n * sizeof(t_dongle));
+	sim->dongles = malloc(n * sizeof(t_dongle));
 	if (!sim->dongles)
 		return (1);
 	i = 0;
@@ -57,8 +57,8 @@ int	init_dongles(t_sim *sim)
 
 int	init_coders(t_sim *sim)
 {
-	int n;
-	int i;
+	int	n;
+	int	i;
 
 	n = sim->num_coders;
 	sim->coders = malloc(n * sizeof(t_coder));

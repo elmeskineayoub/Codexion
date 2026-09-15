@@ -6,7 +6,7 @@
 /*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 09:44:58 by aelmeski          #+#    #+#             */
-/*   Updated: 2026/09/13 10:18:07 by aelmeski         ###   ########.fr       */
+/*   Updated: 2026/09/15 07:35:23 by aelmeski         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ void	ms_to_abstime(struct timespec *ts, int ms)
 {
 	clock_gettime(CLOCK_REALTIME, ts);
 	ts->tv_sec += ms / 1000;
-	ts->tv_nsec += (long)(ms % 1000) * 1000000L;
+	ts->tv_nsec += (long)(ms % 1000)*1000000L;
 	if (ts->tv_nsec >= 1000000000L)
 	{
 		ts->tv_sec += 1;
