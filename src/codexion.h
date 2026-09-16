@@ -16,7 +16,7 @@
 # include <errno.h>
 # include <limits.h>
 # include <pthread.h>
-#include <string.h>
+# include <string.h>
 # include <stdio.h>
 # include <stdlib.h>
 # include <sys/time.h>
@@ -93,7 +93,7 @@ int					is_number(char *str);
 
 /* parse.c */
 void				print_error(char *msg);
-int					valid_scheduler(char *str);
+int					get_scheduler(char *str);
 int					parse_numeric_args(char **argv, int *values);
 void				fill_sim(t_sim *sim, int *values, int sched);
 int					parse_args(int argc, char **argv, t_sim *sim);
@@ -103,42 +103,44 @@ int					init_sim(t_sim *sim);
 int					init_dongles(t_sim *sim);
 int					init_coders(t_sim *sim);
 int					join_all(t_sim *sim);
+void				cleanup_dongles(t_sim *sim);
 void				cleanup_all(t_sim *sim);
-
 
 /* utils.c */
 long				now_ms(void);
-void				precise_sleep(t_sim *sim, int ms);
-void				ms_to_abstime(struct timespec *ts, int ms);
+void				precise_sleep(t_sim *sim, long ms);
+void				ms_to_abstime(struct timespec *ts, long ms);
 void				log_state(t_sim *sim, int coder_id, char *state);
 int					sim_stopped(t_sim *sim);
 
 /* heap.c */
-t_heap				*heap_create(int capacity, int scheduler);
-int				heap_push(t_heap *heap, t_request req);
+int					heap_push(t_heap *heap, t_request req);
+void				sift_up(t_heap *heap, int i);
+void				sift_down(t_heap *heap, int i);
 int					heap_pop(t_heap *heap, t_request *out);
 int					heap_peek(t_heap *heap, t_request *out);
-int					cmp_request(t_request *a, t_request *b, t_scheduler scheduler);
-void			swap(t_request *a, t_request *b);
-void			heap_destroy(t_heap *heap);
 
+/* heap_utils.c */
+void				swap(t_request *a, t_request *b);
+int					cmp_request(t_request *a, t_request *b, t_scheduler sched);
+t_heap				*heap_create(int capacity, int scheduler);
+void				heap_destroy(t_heap *heap);
 
 /* dongle.c */
 int					is_available(t_dongle *dongle);
-int					acquire_one(t_dongle *dongle, t_coder *coder, t_sim *sim);
+int					acquire_one(t_dongle *dongle, t_coder *coder, long arrival);
 int					request_dongles(t_coder *coder, t_sim *sim);
 void				release_one(t_dongle *dongle, t_sim *sim);
 void				release_dongles(t_coder *coder, t_sim *sim);
 
 /* dongle_utils.c */
-t_request			build_request(t_coder *coder, t_sim *sim);
+t_request			build_request(t_coder *coder, t_sim *sim, long arrival);
 void				wait_for_dongle(t_dongle *dongle, long deadline);
 int					wait_single_dongle(t_sim *sim);
 
 /* coder.c */
 void				do_compile(t_coder *coder, t_sim *sim);
-void				do_phase(t_coder *coder, t_sim *sim, long duration,
-						char *state);
+void				do_phase(t_coder *coder, t_sim *sim, long dur, char *state);
 void				record_compile(t_coder *coder, long start);
 void				*coder_routine(void *arg);
 
@@ -147,8 +149,6 @@ void				*monitor_routine(void *arg);
 int					check_burnout(t_sim *sim);
 int					check_all_done(t_sim *sim);
 void				stop_sim(t_sim *sim);
-
-int 			launch_threads(t_sim *sim);
-
+int					launch_threads(t_sim *sim);
 
 #endif

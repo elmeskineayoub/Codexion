@@ -6,7 +6,7 @@
 /*   By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/13 18:28:52 by aelmeski          #+#    #+#             */
-/*   Updated: 2026/09/13 18:38:06 by aelmeski         ###   ########.fr       */
+/*   Updated: 2026/09/16 12:01:04 by aelmeski         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,18 +21,20 @@ void	swap(t_request *a, t_request *b)
 	*b = tmp;
 }
 
-int	cmp_request(t_request *a, t_request *b, t_scheduler scheduler)
+int	cmp_request(t_request *a, t_request *b, t_scheduler sched)
 {
-	if (scheduler == FIFO)
+	if (sched == FIFO)
 	{
 		if (a->arrival != b->arrival)
 			return (a->arrival < b->arrival);
-		return (a->coder_id < b->coder_id);
 	}
-	if (a->deadline != b->deadline)
-		return (a->deadline < b->deadline);
-	if (a->arrival != b->arrival)
-		return (a->arrival < b->arrival);
+	if (sched == EDF)
+	{
+		if (a->deadline != b->deadline)
+			return (a->deadline < b->deadline);
+		if (a->arrival != b->arrival)
+			return (a->arrival < b->arrival);
+	}
 	return (a->coder_id < b->coder_id);
 }
 

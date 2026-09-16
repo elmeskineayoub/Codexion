@@ -20,9 +20,9 @@ long	now_ms(void)
 	return ((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
 }
 
-void	precise_sleep(t_sim *sim, int ms)
+void	precise_sleep(t_sim *sim, long ms)
 {
-	int	target;
+	long	target;
 
 	target = now_ms() + ms;
 	while (now_ms() < target)
@@ -33,11 +33,11 @@ void	precise_sleep(t_sim *sim, int ms)
 	}
 }
 
-void	ms_to_abstime(struct timespec *ts, int ms)
+void	ms_to_abstime(struct timespec *ts, long ms)
 {
 	clock_gettime(CLOCK_REALTIME, ts);
 	ts->tv_sec += ms / 1000;
-	ts->tv_nsec += (long)(ms % 1000)*1000000L;
+	ts->tv_nsec += (long)(ms % 1000) * 1000000L;
 	if (ts->tv_nsec >= 1000000000L)
 	{
 		ts->tv_sec += 1;

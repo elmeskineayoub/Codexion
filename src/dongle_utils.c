@@ -12,12 +12,12 @@
 
 #include "codexion.h"
 
-t_request	build_request(t_coder *coder, t_sim *sim)
+t_request	build_request(t_coder *coder, t_sim *sim, long arrival)
 {
 	t_request	req;
 
 	req.coder_id = coder->id;
-	req.arrival = now_ms();
+	req.arrival = arrival;
 	req.deadline = coder->last_compile_start + sim->time_to_burnout;
 	return (req);
 }

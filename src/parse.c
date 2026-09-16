@@ -44,7 +44,7 @@ int	parse_numeric_args(char **argv, int *values)
 			verified = (values[i - 1] > 0);
 		else
 			verified = (values[i - 1] >= 0);
-		if (verified)
+		if (!verified)
 		{
 			print_error("[ERROR] invalid argument value!\n");
 			exit(1);

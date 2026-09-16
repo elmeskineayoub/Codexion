@@ -17,13 +17,15 @@ int	is_available(t_dongle *dongle)
 	return (dongle->taken == 0 && now_ms() >= dongle->available_at);
 }
 
-int	acquire_one(t_dongle *dongle, t_coder *coder, t_sim *sim)
+int	acquire_one(t_dongle *dongle, t_coder *coder, long arrival)
 {
 	t_request	req;
 	t_request	front;
+	t_sim		*sim;
 
+	sim = coder->sim;
 	pthread_mutex_lock(&dongle->mutex);
-	req = build_request(coder, sim);
+	req = build_request(coder, sim, arrival);
 	heap_push(dongle->waiters, req);
 	while (!sim_stopped(sim))
 	{
@@ -32,7 +34,7 @@ int	acquire_one(t_dongle *dongle, t_coder *coder, t_sim *sim)
 		{
 			heap_pop(dongle->waiters, &front);
 			dongle->taken = 1;
-			log_state(sim, coder->id, "has taken a dongle");
+			log_state(sim, coder->id + 1, "has taken a dongle");
 			pthread_mutex_unlock(&dongle->mutex);
 			return (0);
 		}
@@ -44,9 +46,11 @@ int	acquire_one(t_dongle *dongle, t_coder *coder, t_sim *sim)
 
 int	request_dongles(t_coder *coder, t_sim *sim)
 {
-	int	first;
-	int	second;
+	int		first;
+	int		second;
+	long	arrival;
 
+	arrival = now_ms();
 	if (coder->left_dongle == coder->right_dongle)
 		return (wait_single_dongle(sim));
 	first = coder->left_dongle;
@@ -56,9 +60,9 @@ int	request_dongles(t_coder *coder, t_sim *sim)
 		first = coder->right_dongle;
 		second = coder->left_dongle;
 	}
-	if (acquire_one(&sim->dongles[first], coder, sim) != 0)
+	if (acquire_one(&sim->dongles[first], coder, arrival) != 0)
 		return (1);
-	if (acquire_one(&sim->dongles[second], coder, sim) != 0)
+	if (acquire_one(&sim->dongles[second], coder, arrival) != 0)
 	{
 		release_one(&sim->dongles[first], sim);
 		return (1);

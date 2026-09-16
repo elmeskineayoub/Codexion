@@ -5,37 +5,44 @@
 #                                                     +:+ +:+         +:+      #
 #    By: aelmeski <aelmeski@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2026/09/12 23:37:41 by aelmeski          #+#    #+#              #
-#    Updated: 2026/09/14 22:15:07 by aelmeski         ###   ########.fr        #
+#    Created: 2026/09/10 23:37:41 by aelmeski          #+#    #+#              #
+#    Updated: 2026/09/16 11:26:06 by aelmeski         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 .PHONY: fclean clean re all
 
 CC = cc
-
-CFLAGS = -Wall -Wextra -Werror -pthread
-
+CFLAGS = -Wall -Wextra -Werror -pthread -Isrc
 NAME = codexion
 
-SRCS = coder.c dongle.c dongle_utils.c heap.c heap_utils.c init.c main.c monitor.c parse.c parse_utils.c utils.c
+SRCS = src/coder.c \
+       src/dongle.c \
+       src/dongle_utils.c \
+       src/heap.c \
+       src/heap_utils.c \
+       src/init.c \
+       src/init_utils.c \
+       src/main.c \
+       src/monitor.c \
+       src/parse.c \
+       src/parse_utils.c \
+       src/utils.c
 
 OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
+
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) -o $(NAME) $(OBJS)
 
-%.o: %.c codexion.h
+%.o: %.c src/codexion.h
 	$(CC) $(CFLAGS) -c $< -o $@
-
-
-re:
-	$(MAKE) fclean
-	$(MAKE) all
 
 clean:
 	rm -f $(OBJS)
 
-fclean:
-	rm -f $(OBJS) $(NAME)
+fclean: clean
+	rm -f $(NAME)
+
+re: fclean all
