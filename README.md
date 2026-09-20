@@ -1,7 +1,7 @@
 *This project has been created as part of the 42 curriculum by aelmeski.*
 
 # Codexion
-![Codexion Banner](./assets/Banner_Codexion.jpg)
+
 ## Description
 
 Codexion is a C simulation of concurrent resource sharing under real-time
