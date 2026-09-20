@@ -22,7 +22,6 @@ void	cleanup_dongles(t_sim *sim)
 	while (i < sim->num_coders)
 	{
 		heap_destroy(sim->dongles[i].waiters);
-		pthread_cond_destroy(&sim->dongles[i].cond);
 		pthread_mutex_destroy(&sim->dongles[i].mutex);
 		i++;
 	}

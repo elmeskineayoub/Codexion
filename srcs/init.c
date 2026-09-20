@@ -46,7 +46,6 @@ int	init_dongles(t_sim *sim)
 		sim->dongles[i].taken = 0;
 		sim->dongles[i].available_at = sim->start_time;
 		pthread_mutex_init(&sim->dongles[i].mutex, NULL);
-		pthread_cond_init(&sim->dongles[i].cond, NULL);
 		sim->dongles[i].waiters = heap_create(n, sim->scheduler);
 		if (!sim->dongles[i].waiters)
 			return (1);

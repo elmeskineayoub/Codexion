@@ -33,18 +33,6 @@ void	precise_sleep(t_sim *sim, long ms)
 	}
 }
 
-void	ms_to_abstime(struct timespec *ts, long ms)
-{
-	clock_gettime(CLOCK_REALTIME, ts);
-	ts->tv_sec += ms / 1000;
-	ts->tv_nsec += (long)(ms % 1000) * 1000000L;
-	if (ts->tv_nsec >= 1000000000L)
-	{
-		ts->tv_sec += 1;
-		ts->tv_nsec -= 1000000000L;
-	}
-}
-
 void	log_state(t_sim *sim, int coder_id, char *state)
 {
 	if (sim_stopped(sim))

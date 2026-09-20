@@ -75,8 +75,8 @@ Every state change is logged as `timestamp_in_ms coder_id action`, e.g.:
 
 ```
 0 1 has taken a dongle
-2 1 has taken a dongle
-2 1 is compiling
+0 1 has taken a dongle
+0 1 is compiling
 ```
 
 The simulation stops either when a coder burns out (its log line is
@@ -94,8 +94,8 @@ guaranteed to be the last one printed) or once every coder has reached
 - *The Linux Programming Interface* (Michael KerrisK) — the Linux programming interface—the system calls, library
 functions, and other low-level interfaces provided by Linux, a free implementation
 of the UNIX operating system.
-- `man` pages: `pthread_create`, `pthread_mutex_init`, `pthread_cond_wait`,
-  `pthread_cond_timedwait`, `clock_gettime`, `gettimeofday`.
+- `man` pages: `pthread_create`, `pthread_join`, `pthread_mutex_init`,
+  `pthread_mutex_lock`, `gettimeofday`, `usleep`.
 - Wikipedia — Earliest Deadline First scheduling; Coffman's conditions for
   deadlock.
 
@@ -109,22 +109,45 @@ questioned, reviewed, and corrected it rather than writing it from scratch.
 
 **Deadlock prevention (Coffman's conditions).** Compiling requires two
 dongles held simultaneously — a direct opportunity for the classic Dining
-Philosophers deadlock, where every coder holds one dongle and waits forever
-for its neighbour's. This is prevented by breaking the *circular wait*
-condition: a coder always acquires its **lower-numbered** dongle first,
-regardless of which one is its "left" or "right". If every thread acquires
-shared resources in a single globally consistent order, the chain of "who is
-waiting for whom" can only ever increase in dongle id, and a strictly
-increasing sequence over a finite set cannot cycle back on itself. No cycle,
-no deadlock.
+Philosophers deadlock, where every coder grabs one dongle and then waits
+forever for the one its neighbour is holding. Deadlock requires all four
+Coffman conditions at once (mutual exclusion, no preemption, hold-and-wait,
+circular wait); breaking any single one makes it impossible. This
+implementation breaks **two of them, independently**.
 
-*Known trade-off:* this acquisition order still allows **hold-and-wait** (a
-coder holds its first dongle while waiting for its second), which under large
-`dongle_cooldown` values can waste dongle availability and, in tightly
-parameterised scenarios, cost a coder its burnout deadline. Eliminating it
-would require all-or-nothing acquisition of both dongles under a single
-decision, which introduces its own head-of-line-blocking trade-off. This
-project favours guaranteed deadlock freedom via fixed ordering.
+*First, hold-and-wait is eliminated by all-or-nothing acquisition.* A coder
+queues its request on both of its dongles' waiter heaps, then loops: if it can
+take **both** — both free, cooldown elapsed on both, and it is first in line
+on both — it claims both inside a single critical section. If it cannot, it
+**releases both mutexes**, backs off for 200 µs, and retries from scratch. A
+coder therefore never holds one resource while blocked waiting for another, so
+it can never be a link in a "holds X, waits for Y" chain, and no such chain can
+form a cycle.
+
+```c
+while (!sim_stopped(sim))
+{
+    if (can_take_both(coder, sim))
+    {
+        take_both(coder, sim);        /* claims BOTH, or neither */
+        unlock_both(sim, a, b);
+        return (0);
+    }
+    unlock_both(sim, a, b);           /* could not -> release everything */
+    usleep(200);
+    lock_both(sim, a, b);             /* and try again */
+}
+```
+
+*Second, circular wait is eliminated by a strict global lock order.*
+`order_dongles` always places the lower dongle id in `a` and the higher in `b`,
+and `lock_both` always locks `a` before `b`. Every thread in the program
+therefore acquires dongle mutexes in the same ascending direction. A chain of
+"who waits for whom" would require strictly increasing dongle ids, and a
+strictly increasing sequence over a finite set cannot return to its start.
+Concretely, with 5 coders: coder 1 needs dongles 0 and 1 and locks 0 first;
+coder 5 needs dongles 4 and 0 and — instead of locking 4 first — also locks
+**0 first**. The wrap-around that would close the ring never happens.
 
 **Starvation prevention.** Each dongle owns its own hand-written priority
 queue (a binary heap; no standard library structure is used). Under `fifo`,
@@ -133,19 +156,25 @@ deadline (`last_compile_start + time_to_burnout`). Both policies fall back to
 arrival time and finally to a coder's unique id to break ties deterministically,
 exactly as required for reproducible EDF behaviour when timestamps collide.
 Because EDF always prioritises the coder closest to burnout, no coder can be
-indefinitely outrun by others under a feasible parameter set.
+indefinitely outrun by others under a feasible parameter set. The arrival
+timestamp used for both heaps is captured once, at the moment a coder begins
+trying to compile — not separately per dongle — so a coder's queue position
+reflects when it actually wanted to compile rather than an artifact of
+acquisition order.
 
 **Cooldown handling.** Every dongle stores an `available_at` timestamp, set
 to `now + dongle_cooldown` at the moment of release. A dongle is only
-considered available once `now >= available_at`, so it cannot be re-acquired
-before its cooldown elapses — enforced inside the same critical section that
-checks whether the dongle is currently held.
+considered free once `now >= available_at` **and** `taken == 0` — both checked
+together in `is_free`, under that dongle's own mutex, as part of every
+acquisition attempt. A dongle therefore cannot be re-taken before its cooldown
+elapses, regardless of which coder is trying.
 
 **Precise burnout detection.** A dedicated monitor thread polls every coder's
 state every 300 microseconds — roughly 33 times inside the subject's 10 ms
 precision budget — comparing `now - last_compile_start` against
 `time_to_burnout`. `last_compile_start` is reset at the **start** of a
-compile, not its end, matching the subject's definition of the deadline.
+compile, not its end, matching the subject's definition of the deadline. A
+burnout on an 800 ms deadline is reported at 801 ms.
 
 **Log serialization.** A single mutex protects every `printf` call across all
 threads, guaranteeing no two log lines can ever interleave. A guard inside
@@ -158,28 +187,32 @@ its own message.
 ## Thread synchronization mechanisms
 
 **`pthread_mutex_t`, one per dongle**, protects that dongle's `taken` flag,
-`available_at` cooldown timestamp, and its waiter heap. Every read or
-modification of these fields happens inside this lock, preventing two coders
-from ever believing they simultaneously hold the same dongle — the core race
-this project must avoid.
+its `available_at` cooldown timestamp, and its waiter heap. Every read or write
+of these fields happens inside this lock, so no coder can ever observe or
+create an inconsistent view of a dongle's state. This is also the lock that
+makes acquisition atomic: `lock_both` holds *both* of a coder's dongle mutexes
+across the entire check-and-claim sequence, so `can_take_both` (the test) and
+`take_both` (the action) cannot be interleaved by another coder's decision —
+closing the classic check-then-act race.
 
-**`pthread_cond_t`, one per dongle**, lets a waiting coder sleep instead of
-busy-polling. Coders wait with `pthread_cond_timedwait`, bounded either by the
-dongle's cooldown expiry or by the coder's own burnout deadline, so a missed
-wake-up degrades to "checks slightly late" rather than hanging forever. Every
-wait sits inside a `while` loop re-checking the real condition (dongle
-available **and** this coder is at the front of its queue) rather than an
-`if`, since a `pthread_cond_wait`/`timedwait` can return for reasons unrelated
-to this specific coder's turn (a broadcast meant for another dongle's event,
-or a spurious wakeup).
+**A strict global lock ordering** is what makes holding two mutexes at once
+safe. `order_dongles` guarantees `a < b`, and `lock_both`/`unlock_both` always
+lock `a` then `b` and unlock `b` then `a`. Because every thread follows the
+same direction, the mutexes themselves can never deadlock against each other.
+`lock_both` also guards the `n = 1` case with `if (b != a)`, since locking the
+same non-recursive mutex twice from one thread would self-deadlock.
 
-On release, `pthread_cond_broadcast` (not `signal`) wakes every coder queued
-on that dongle, since more than one coder can be waiting on it; each
-re-evaluates its own predicate and only the true front-of-queue winner
-proceeds. The same reasoning, applied simulation-wide, is why the monitor's
-shutdown routine broadcasts on **every** dongle's condition variable in turn —
-each dongle has its own condition variable, so a coder asleep on dongle 3 is
-never woken by an event on dongle 0.
+**Bounded backoff instead of condition variables.** This implementation uses
+no `pthread_cond_t`. The subject permits one — *"a condition variable may be
+used to manage waiting queues"* — but does not require it, and with
+all-or-nothing acquisition there is no single event to signal: a waiting coder
+depends on the combined state of **two** dongles plus **two** cooldown timers,
+and a cooldown expiring is not an event any thread can broadcast — it is simply
+the passage of time, which somebody has to re-check regardless. A coder that
+cannot proceed therefore releases both mutexes, sleeps 200 µs, and re-evaluates
+the full condition from scratch. This removes an entire class of missed-wakeup,
+lost-signal and spurious-wakeup bugs, and 200 µs is fifty times finer than the
+10 ms precision budget the subject sets.
 
 **Per-coder `pthread_mutex_t` (`state_mutex`)** protects `compile_count` and
 `last_compile_start`, written by the coder's own thread and read
@@ -187,17 +220,25 @@ concurrently by the monitor thread. Without this lock, the read/modify/write
 sequence behind updating these fields would be a textbook data race — the
 same class of bug as an unprotected `counter++` across threads, but with the
 consequence of a missed or phantom burnout detection instead of a wrong
-number.
+number. Both fields are updated inside the same critical section because the
+monitor reads them together; splitting them would let it observe an
+incremented count alongside a stale start time.
 
-**A dedicated `stop` flag protected by its own `pthread_mutex_t`** is the
-project's "custom event": every thread — coder and monitor alike — checks it
-through a single locked accessor before proceeding through any phase or wait.
-Setting it and broadcasting on every dongle together form the shutdown
-sequence: every coder, wherever it is sleeping, is guaranteed to wake, notice
-the flag, and unwind cleanly, which is what allows `pthread_join` to complete
-for every thread without ever hanging.
+**A dedicated `stop` flag protected by its own `pthread_mutex_t`
+(`stop_mutex`)** is the project's "custom event". Every thread — coder and
+monitor alike — reads it exclusively through the locked accessor
+`sim_stopped()`; the flag is never touched directly anywhere in the codebase.
+Because no thread ever sleeps on an unbounded wait, no wake-up signal is
+needed at shutdown: the monitor simply sets the flag, and every thread
+observes it at its next check — within 200 µs inside the acquisition loop, and
+within 300 µs inside `precise_sleep`, which re-tests the flag between
+increments rather than sleeping through a phase in one call. A coder that exits
+mid-acquisition holds nothing (all-or-nothing acquisition guarantees it never
+completed a partial claim), so it simply releases its mutexes and returns. This
+chain is what allows `pthread_join` to complete for every thread without ever
+hanging.
 
 **A separate `pthread_mutex_t` around all logging** is the mechanism behind
 log serialization described above — the only shared resource every thread in
 the program touches, made safe by a single lock around the `printf` call
-itself.
+itself, which appears exactly once in the entire project.
